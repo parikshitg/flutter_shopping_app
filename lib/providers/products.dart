@@ -7,7 +7,7 @@ import './product.dart';
 
 class Products with ChangeNotifier {
   List<Product> _items = [
-   /* Product(
+    /* Product(
       id: 'p1',
       title: 'Red Shirt',
       description: 'A red shirt - it is pretty red!',
@@ -127,13 +127,14 @@ class Products with ChangeNotifier {
     final prodIndex = _items.indexWhere((prod) => prod.id == id);
     if (prodIndex >= 0) {
       final url =
-        'https://flutter-shopping-app-c092b.firebaseio.com/products/$id.json';
-      await http.patch(url, body: json.encode({
-        'title': newProduct.title,
-        'description': newProduct.description,
-        'price': newProduct.price,
-        'imageUrl': newProduct.imageUrl,
-      }));
+          'https://flutter-shopping-app-c092b.firebaseio.com/products/$id.json';
+      await http.patch(url,
+          body: json.encode({
+            'title': newProduct.title,
+            'description': newProduct.description,
+            'price': newProduct.price,
+            'imageUrl': newProduct.imageUrl,
+          }));
       _items[prodIndex] = newProduct;
       notifyListeners();
     } else {
@@ -142,7 +143,18 @@ class Products with ChangeNotifier {
   }
 
   void deleteProduct(String id) {
-    _items.removeWhere((prod) => prod.id == id);
+    final url =
+        'https://flutter-shopping-app-c092b.firebaseio.com/products/$id.json';
+
+    final existingProductIndex = _items.indexWhere((prod) => prod.id == id);
+    var existingProduct = _items[existingProductIndex];
+
+    http.delete(url).then((_) {
+      existingProduct = null;
+    }).catchError((_) {
+      _items.insert(existingProductIndex, existingProduct);
+    });
+    _items.removeAt(existingProductIndex);
     notifyListeners();
   }
 }
