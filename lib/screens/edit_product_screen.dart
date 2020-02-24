@@ -19,19 +19,17 @@ class _EditProductScreenState extends State<EditProductScreen> {
   final _form = GlobalKey<FormState>();
   var _editedProduct = Product(
     id: null,
-    title: "",
+    title: '',
     price: 0,
     description: '',
     imageUrl: '',
   );
-
   var _initValues = {
     'title': '',
     'description': '',
     'price': '',
     'imageUrl': '',
   };
-
   var _isInit = true;
   var _isLoading = false;
 
@@ -52,6 +50,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
           'title': _editedProduct.title,
           'description': _editedProduct.description,
           'price': _editedProduct.price.toString(),
+          // 'imageUrl': _editedProduct.imageUrl,
           'imageUrl': '',
         };
         _imageUrlController.text = _editedProduct.imageUrl;
@@ -61,6 +60,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
     super.didChangeDependencies();
   }
 
+  @override
   void dispose() {
     _imageUrlFocusNode.removeListener(_updateImageUrl);
     _priceFocusNode.dispose();
@@ -73,7 +73,7 @@ class _EditProductScreenState extends State<EditProductScreen> {
   void _updateImageUrl() {
     if (!_imageUrlFocusNode.hasFocus) {
       if ((!_imageUrlController.text.startsWith('http') &&
-              !_imageUrlController.text.startsWith("https")) ||
+              !_imageUrlController.text.startsWith('https')) ||
           (!_imageUrlController.text.endsWith('.png') &&
               !_imageUrlController.text.endsWith('.jpg') &&
               !_imageUrlController.text.endsWith('.jpeg'))) {
@@ -102,13 +102,27 @@ class _EditProductScreenState extends State<EditProductScreen> {
     } else {
       Provider.of<Products>(context, listen: false)
           .addProduct(_editedProduct)
-          .then((_) {
+          .catchError((error) {
+        return showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+                title: Text('An error occurred!'),
+                content: Text('Something went wrong.'),
+                actions: <Widget>[
+                  FlatButton(child: Text('Okay'), onPressed: () {
+                    Navigator.of(ctx).pop();
+                  },)
+                ],
+              ),
+        );
+      }).then((_) {
         setState(() {
           _isLoading = false;
         });
         Navigator.of(context).pop();
       });
     }
+
   }
 
   @override
@@ -135,82 +149,73 @@ class _EditProductScreenState extends State<EditProductScreen> {
                   children: <Widget>[
                     TextFormField(
                       initialValue: _initValues['title'],
-                      decoration: InputDecoration(
-                        labelText: 'Title',
-                      ),
+                      decoration: InputDecoration(labelText: 'Title'),
                       textInputAction: TextInputAction.next,
-                      validator: (value) {
-                        if (value.isEmpty) {
-                          return 'Please provide a value';
-                        }
-                        return null;
-                      },
                       onFieldSubmitted: (_) {
                         FocusScope.of(context).requestFocus(_priceFocusNode);
                       },
+                      validator: (value) {
+                        if (value.isEmpty) {
+                          return 'Please provide a value.';
+                        }
+                        return null;
+                      },
                       onSaved: (value) {
                         _editedProduct = Product(
-                          title: value,
-                          price: _editedProduct.price,
-                          description: _editedProduct.description,
-                          imageUrl: _editedProduct.imageUrl,
-                          id: _editedProduct.id,
-                          isFavorite: _editedProduct.isFavorite,
-                        );
+                            title: value,
+                            price: _editedProduct.price,
+                            description: _editedProduct.description,
+                            imageUrl: _editedProduct.imageUrl,
+                            id: _editedProduct.id,
+                            isFavorite: _editedProduct.isFavorite);
                       },
                     ),
                     TextFormField(
                       initialValue: _initValues['price'],
-                      decoration: InputDecoration(
-                        labelText: 'Price',
-                      ),
+                      decoration: InputDecoration(labelText: 'Price'),
                       textInputAction: TextInputAction.next,
                       keyboardType: TextInputType.number,
                       focusNode: _priceFocusNode,
+                      onFieldSubmitted: (_) {
+                        FocusScope.of(context)
+                            .requestFocus(_descriptionFocusNode);
+                      },
                       validator: (value) {
                         if (value.isEmpty) {
-                          return "please enter a price";
+                          return 'Please enter a price.';
                         }
                         if (double.tryParse(value) == null) {
-                          return 'please enter a valid number';
+                          return 'Please enter a valid number.';
                         }
                         if (double.parse(value) <= 0) {
-                          return 'Please enter a number greater than zero';
+                          return 'Please enter a number greater than zero.';
                         }
                         return null;
                       },
                       onSaved: (value) {
                         _editedProduct = Product(
-                          title: _editedProduct.title,
-                          price: double.parse(value),
-                          description: _editedProduct.description,
-                          imageUrl: _editedProduct.imageUrl,
-                          id: _editedProduct.id,
-                          isFavorite: _editedProduct.isFavorite,
-                        );
+                            title: _editedProduct.title,
+                            price: double.parse(value),
+                            description: _editedProduct.description,
+                            imageUrl: _editedProduct.imageUrl,
+                            id: _editedProduct.id,
+                            isFavorite: _editedProduct.isFavorite);
                       },
                     ),
                     TextFormField(
                       initialValue: _initValues['description'],
-                      decoration: InputDecoration(
-                        labelText: 'Description',
-                      ),
+                      decoration: InputDecoration(labelText: 'Description'),
                       maxLines: 3,
-                      textInputAction: TextInputAction.next,
                       keyboardType: TextInputType.multiline,
                       focusNode: _descriptionFocusNode,
                       validator: (value) {
                         if (value.isEmpty) {
-                          return 'please enter a description';
+                          return 'Please enter a description.';
                         }
                         if (value.length < 10) {
-                          return 'please enter more than 10 characters';
+                          return 'Should be at least 10 characters long.';
                         }
                         return null;
-                      },
-                      onFieldSubmitted: (_) {
-                        FocusScope.of(context)
-                            .requestFocus(_descriptionFocusNode);
                       },
                       onSaved: (value) {
                         _editedProduct = Product(
@@ -227,11 +232,11 @@ class _EditProductScreenState extends State<EditProductScreen> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: <Widget>[
                         Container(
-                          width: 100.0,
-                          height: 100.0,
+                          width: 100,
+                          height: 100,
                           margin: EdgeInsets.only(
                             top: 8,
-                            right: 10.0,
+                            right: 10,
                           ),
                           decoration: BoxDecoration(
                             border: Border.all(
@@ -255,19 +260,21 @@ class _EditProductScreenState extends State<EditProductScreen> {
                             textInputAction: TextInputAction.done,
                             controller: _imageUrlController,
                             focusNode: _imageUrlFocusNode,
-                            onFieldSubmitted: (_) => _saveForm(),
+                            onFieldSubmitted: (_) {
+                              _saveForm();
+                            },
                             validator: (value) {
                               if (value.isEmpty) {
-                                return 'Please enter an image URL';
+                                return 'Please enter an image URL.';
                               }
                               if (!value.startsWith('http') &&
-                                  !value.startsWith("https")) {
-                                return 'Please enter a valid URL';
+                                  !value.startsWith('https')) {
+                                return 'Please enter a valid URL.';
                               }
                               if (!value.endsWith('.png') &&
                                   !value.endsWith('.jpg') &&
                                   !value.endsWith('.jpeg')) {
-                                return 'url is not an image';
+                                return 'Please enter a valid image URL.';
                               }
                               return null;
                             },
